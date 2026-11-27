@@ -17,7 +17,7 @@ documento → extrair texto → dividir em pedaços → perguntar ao LLM → val
 ## Instalação
 
 ```bash
-git clone https://github.com/SEU-USUARIO/doc2json.git
+git clone https://github.com/AgataAraujo-dev/doc2json.git
 cd doc2json
 python -m venv .venv
 .venv\Scripts\Activate.ps1  # Windows

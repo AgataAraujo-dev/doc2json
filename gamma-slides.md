@@ -285,7 +285,7 @@ A mensagem de erro vai pro LLM corrigir.
 
 # O repositório
 
-**github.com/[seu-usuario]/doc2json**
+**github.com/AgataAraujo-dev/doc2json**
 
 [espaço para QR code]
 
@@ -299,7 +299,7 @@ A mensagem de erro vai pro LLM corrigir.
 
 [espaço para QR code]
 
-**github.com/[seu-usuario]/doc2json**
+**github.com/AgataAraujo-dev/doc2json**
 
 [contato]
 

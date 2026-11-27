@@ -5,7 +5,7 @@ Obrigada pelo interesse em contribuir com o doc2json! 🎉
 ## Preparando o ambiente
 
 ```bash
-git clone https://github.com/SEU-USUARIO/doc2json.git
+git clone https://github.com/AgataAraujo-dev/doc2json.git
 cd doc2json
 python -m venv .venv
 .venv\Scripts\Activate.ps1  # Windows
