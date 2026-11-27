@@ -7,11 +7,17 @@
 
 # Quem sou eu
 
-**Ágata**
+**Ágata Araújo**
+Consultora de Projetos Dados & IA na Select Soluções
 
-[cargo e trajetória — preencher com sua história]
+**Minha trajetória:**
+- 2024: AWS Cloud Practitioner (primeira certificação)
+- 2025: TechSelekrs + Estágio + AI Practitioner + Solutions Architect Associate
+- 2026: Efetivada como PMO → Data Engineer Associate → Consultora
 
-[contato: LinkedIn, GitHub, etc.]
+**Certificações:** 5× AWS, Datadog, Scrum, Cyber Academy (Febraban), IA Business Strategist
+
+[LinkedIn/GitHub — preencher]
 
 ---
 
