@@ -1,7 +1,7 @@
 # Do PDF ao dado estruturado
 ## Construindo um pipeline com Python e LLMs
 
-[nome do evento] · [data]
+PythOnSerra · [data]
 
 ---
 
