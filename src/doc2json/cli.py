@@ -16,7 +16,11 @@ def criar_llm(provedor: str) -> LLM:
         from .llm.bedrock import BedrockLLM
 
         return BedrockLLM()
-    raise typer.BadParameter(f'Provedor desconhecido: {provedor}. Use fake ou bedrock.')
+    if provedor == 'groq':
+        from .llm.groq import GroqLLM
+
+        return GroqLLM()
+    raise typer.BadParameter(f'Provedor desconhecido: {provedor}. Use fake, groq ou bedrock.')
 
 
 @app.callback()
