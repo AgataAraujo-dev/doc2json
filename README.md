@@ -59,6 +59,36 @@ doc2json extrair documento.docx --esquema esquema.yaml --provedor bedrock
 }
 ```
 
+### Processando uma pasta inteira
+
+Passe uma pasta no lugar do arquivo para processar todos os documentos `.pdf`, `.docx` e `.xlsx` dela (subpastas não são lidas) e gerar um resultado consolidado:
+
+```bash
+doc2json extrair documentos/ --esquema esquema.yaml --provedor bedrock --saida resultado.json
+```
+
+```json
+[
+  {
+    "arquivo": "aurora.docx",
+    "dados": {"nome": "Projeto Aurora", "responsavel": "Marina Souza", "prazo": "2026-12-15"}
+  }
+]
+```
+
+Use `--formato csv` (ou `-f csv`) para gerar uma planilha com uma linha por documento. Campos do tipo lista viram texto separado por `; `:
+
+```bash
+doc2json extrair documentos/ --esquema esquema.yaml --formato csv --saida resultado.csv
+```
+
+```csv
+arquivo,nome,responsavel,prazo
+aurora.docx,Projeto Aurora,Marina Souza,2026-12-15
+```
+
+Se algum documento der erro, ele é informado e os demais continuam sendo processados; nesse caso o comando termina com código de saída 1.
+
 ## Provedores de IA
 
 | Provedor | Descrição |
@@ -87,8 +117,8 @@ export BEDROCK_MODEL_ID="anthropic.claude-3-haiku-20240307-v1:0"
 - [ ] Provedor local (Ollama)
 - [ ] OCR para PDFs escaneados
 - [ ] Tabelas do Word na ordem correta
-- [ ] Processar pasta inteira
-- [ ] Saída em CSV
+- [x] Processar pasta inteira
+- [x] Saída em CSV
 
 ## Testes
 
