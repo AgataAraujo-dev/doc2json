@@ -1,0 +1,17 @@
+nome: Projeto
+campos:
+  nome:
+    tipo: texto
+    descricao: Nome do projeto
+  responsavel:
+    tipo: texto
+    descricao: Pessoa responsável; null se não aparecer
+  prazo:
+    tipo: data
+    descricao: Data final do projeto no formato AAAA-MM-DD
+  prioridade:
+    tipo: texto
+    descricao: Prioridade (baixa, media ou alta)
+  escopo:
+    tipo: lista_texto
+    descricao: Principais entregas do projeto
