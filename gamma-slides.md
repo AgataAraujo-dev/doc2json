@@ -1,96 +1,115 @@
 # Do PDF ao dado estruturado
+
 ## Construindo um pipeline com Python e LLMs
 
-PythOnSerra · [data]
+Ágata Araújo · PythOnSerra · [data]
 
 ---
 
 # Quem sou eu
 
-**Ágata Araújo**
+**Ágata Araújo** · Rio de Janeiro
 Consultora de Projetos Dados & IA na Select Soluções
 
-**Minha trajetória:**
-- 2024: AWS Cloud Practitioner (primeira certificação)
-- 2025: TechSelekrs + Estágio + AI Practitioner + Solutions Architect Associate
-- 2026: Efetivada como PMO → Data Engineer Associate → Consultora
+**Trajetória:**
+- 2024: Escola da Nuvem → AWS Cloud Practitioner
+- 2025: TechSelekrs → Estágio → AI Practitioner + Solutions Architect
+- 2026: PMO → Data Engineer Associate → Consultora de IA
 
-**Certificações:** 5× AWS, Datadog, Scrum, Cyber Academy (Febraban), IA Business Strategist
+**Certificações:** 5× AWS + IA Business Strategist, Datadog, Scrum, Cyber Academy
 
-[LinkedIn/GitHub — preencher]
+[LinkedIn — preencher]
 
 ---
 
-# O problema dos dados presos
+# O problema: dados presos em documentos
 
-Informações importantes vivem trancadas em documentos:
-- Contratos
-- Relatórios
-- Planilhas
+- A informação importante vive em PDFs, planilhas e arquivos Word
+- Alguém abre, lê e copia campo por campo
+- Lento, cansativo e cheio de erros
 
-Extrair manualmente é lento, chato e cheio de erros.
+**E se um programa fizesse isso por nós?**
 
 ---
 
 # O que vamos construir
 
-Um comando que transforma isso:
+**Antes:** texto solto
 
-> "Projeto Aurora. Responsável: Marina Souza. Prazo: 15 de dezembro de 2026."
+> Projeto Aurora. Responsável: Marina Souza. O prazo final é 15 de dezembro de 2026 e a prioridade é alta.
 
-Nisso:
+**Depois:** dado estruturado
 
 ```json
 {
   "nome": "Projeto Aurora",
   "responsavel": "Marina Souza",
-  "prazo": "2026-12-15"
+  "prazo": "2026-12-15",
+  "prioridade": "alta"
 }
 ```
+
+A data já vem no formato certo.
 
 ---
 
 # O mapa do pipeline
 
-[DIAGRAMA: caixas conectadas por setas]
+Diagrama em linha, da esquerda para a direita:
 
-```
-documento → extrair texto → dividir → LLM → validar → JSON
-                                        ▲         │
-                                        └─ retry ─┘
-```
+Documento → 1. Extrair texto → 2. Dividir em pedaços → 3. Perguntar ao LLM → 4. Validar → JSON
 
-Cada etapa tem uma responsabilidade só.
+Uma seta de volta, do passo 4 para o passo 3: se a resposta vier errada, tenta de novo.
 
 ---
 
-# Por que um pipeline?
+# O que vamos usar
 
-- Cada peça pode ser testada separadamente
-- Fácil trocar o LLM depois
-- Erros ficam isolados
-- Funciona com documentos de qualquer tamanho
-
----
-
-# Etapa 1: Extrair texto
-
-O LLM só entende texto. Precisamos converter PDF, Word e Excel.
-
-```python
-from pypdf import PdfReader
-
-def extract_pdf(caminho):
-    leitor = PdfReader(caminho)
-    paginas = [p.extract_text() for p in leitor.pages]
-    return '\n\n'.join(paginas)
-```
+| Etapa | Ferramenta |
+| --- | --- |
+| Ler PDF | pypdf |
+| Ler Word | python-docx |
+| Ler Excel | openpyxl |
+| Validar | Pydantic |
+| Linha de comando | Typer |
+| LLM | Qualquer provedor (Bedrock, Groq, Ollama...) |
 
 ---
 
-# A "porteira" dos formatos
+# Etapa 1: extrair texto
 
-Uma função que escolhe o extrator certo pela extensão:
+O LLM só entende texto. Cada formato precisa do seu leitor.
+
+- PDF → pypdf
+- Word → python-docx
+- Excel → openpyxl
+
+---
+
+# PDF: o texto está lá dentro?
+
+- O leitor percorre o PDF página por página
+- O texto sai corrido, às vezes com quebras de linha estranhas
+- **Pegadinha:** PDF escaneado é imagem, não tem texto. Precisa de OCR
+- Nosso programa avisa, em vez de mandar texto vazio para a IA
+
+---
+
+# Word e Excel: as pegadinhas
+
+**Word**
+
+- Tabelas ficam separadas dos parágrafos
+- Extraímos cada linha como "célula | célula"
+
+**Excel**
+
+- Um arquivo tem várias abas: marcamos cada uma com o nome
+- Lemos o resultado da fórmula, não a fórmula
+
+---
+
+# Código: a porteira de extratores
 
 ```python
 EXTRATORES = {
@@ -101,212 +120,171 @@ EXTRATORES = {
 
 def extract_text(caminho):
     extensao = Path(caminho).suffix.lower()
+    if extensao not in EXTRATORES:
+        raise ValueError(f'Formato não suportado: {extensao}')
     return EXTRATORES[extensao](caminho)
 ```
 
----
-
-# Pegadinhas de cada formato
-
-**PDF**: se for escaneado, não tem texto — precisa de OCR
-
-**Word**: tabelas ficam separadas dos parágrafos
-
-**Excel**: várias abas, fórmulas vs valores
+Uma função por formato. Um dicionário escolhe a certa pela extensão.
 
 ---
 
-# O esquema: o que queremos de volta
+# Textos longos: dividir em pedaços
 
-Usamos Pydantic para definir os campos:
+- O LLM lê só um limite de texto por vez (a janela de contexto)
+- Cortamos o documento em pedaços e juntamos as respostas
+- **Sobreposição:** cada pedaço repete o final do anterior
+
+Diagrama: Pedaço 1 | Pedaço 2 | Pedaço 3, com a ponta de cada pedaço repetida no começo do seguinte.
+
+---
+
+# LLM como parser: um contrato
+
+Em vez de pedir "resuma este documento", pedimos:
+
+**"Devolva exatamente estes campos, neste formato."**
+
+Texto livre → LLM → JSON previsível
+
+O esquema é o contrato.
+
+---
+
+# O esquema com Pydantic
 
 ```python
 class Projeto(BaseModel):
-    nome: str
-    responsavel: str | None = None
-    prazo: date | None = None
-    escopo: list[str] = []
+    nome: str = Field(description='Nome do projeto')
+    responsavel: str | None = Field(None, description='Responsável; null se não aparecer')
+    prazo: date | None = Field(None, description='Data final, AAAA-MM-DD')
+    prioridade: Prioridade | None = None
+    escopo: list[str] = Field(default_factory=list)
 ```
 
-O `| None` é importante: se a info não existe, fica vazio.
+Os tipos dizem o que é aceito: texto, data, lista, opções.
 
 ---
 
-# Dividindo textos longos
+# A descrição é instrução para a IA
 
-[DIAGRAMA: texto grande sendo cortado em pedaços com sobreposição]
+- Cada campo tem uma descrição em português claro
+- A mesma descrição documenta o código e orienta o modelo
+- `Projeto.model_json_schema()` gera o esquema que vai no prompt
 
-O LLM tem limite de contexto. Documentos grandes precisam ser divididos.
+---
 
-A sobreposição garante que nada se perca na divisa.
+# Três formas de pedir saída estruturada
+
+1. **Só no prompt:** "responda em JSON" → simples, mas frágil
+2. **Esquema dentro do prompt** → mais confiável
+3. **Recurso nativo do provedor** (saída estruturada ou tool use) → o modelo é forçado a seguir o esquema
+
+Nosso projeto usa a 2 e valida o resultado.
+
+---
+
+# Três dicas de prompt que valem ouro
+
+1. Peça `null` quando não achar: nunca inventar
+2. Defina o formato da data: AAAA-MM-DD
+3. Peça só o JSON, sem texto em volta
+
+---
+
+# Validar o que voltou
 
 ```python
-def dividir_texto(texto, tamanho_max=6000):
-    # corta por linhas, com sobreposição
+try:
+    projeto = Projeto.model_validate_json(resposta)
+except ValidationError as erro:
+    print(erro)
 ```
 
----
-
-# Etapa 2: LLM como parser
-
-O prompt é a instrução para a IA:
-
-```python
-def montar_prompt(texto, modelo):
-    return f'''Extraia informações do documento.
-Responda APENAS com JSON válido.
-
-Regras:
-- Se a info não aparecer, use null
-- Datas no formato AAAA-MM-DD
-
-<documento>
-{texto}
-</documento>'''
-```
-
----
-
-# A interface plugável
-
-Qualquer classe com `complete(prompt) -> str` serve:
-
-```python
-class LLM(Protocol):
-    def complete(self, prompt: str) -> str: ...
-```
-
-Isso permite trocar de provedor sem mudar o resto.
-
----
-
-# FakeLLM: testando sem IA
-
-```python
-class FakeLLM:
-    def __init__(self, respostas):
-        self.respostas = list(respostas)
-    
-    def complete(self, prompt):
-        return self.respostas.pop(0)
-```
-
-Testes rodam rápido, sem custo, sem internet.
-
----
-
-# BedrockLLM: IA de verdade
-
-```python
-class BedrockLLM:
-    def complete(self, prompt):
-        resposta = self.client.converse(
-            modelId=self.model_id,
-            messages=[{'role': 'user', 
-                      'content': [{'text': prompt}]}],
-        )
-        return resposta['output']['message']['content'][0]['text']
-```
-
----
-
-# O resultado
-
-```bash
-doc2json extrair documento.docx \
-    --esquema projeto.yaml \
-    --provedor bedrock
-```
-
-```json
-{
-  "nome": "Projeto Aurora",
-  "responsavel": "Marina Souza",
-  "prazo": "2026-12-15",
-  "prioridade": "alta",
-  "escopo": ["portal", "migração", "treinamento"]
-}
-```
+**Tudo o que vem de uma IA deve ser conferido antes de ser usado.**
 
 ---
 
 # Quando dá errado
 
-A IA pode responder:
-- JSON inválido
-- Campos faltando
-- Tipos errados
-- Texto junto com o JSON
-
-Nunca confie cegamente na resposta.
+- Texto maior que a janela de contexto
+- Resposta fora do formato: JSON quebrado, texto extra
+- Campo inventado quando a informação não existe
+- Documentos inconsistentes: cada um de um jeito
 
 ---
 
 # O laço de nova tentativa
 
-[DIAGRAMA: fluxo com retry — LLM → validar → erro → prompt com correção → LLM]
+Diagrama de fluxo:
+
+A IA responde → Validação
+
+- Válido → segue para o resultado
+- Inválido → devolve o erro à IA e pede a correção (até 3 tentativas)
+- Esgotou as tentativas → erro com mensagem clara
+
+---
+
+# Código: extrair_dados
 
 ```python
 for _ in range(tentativas):
     resposta = llm.complete(prompt)
     try:
-        return modelo.model_validate_json(resposta)
+        return modelo.model_validate_json(limpar_resposta(resposta))
     except ValidationError as erro:
-        prompt = f"{prompt_base}\nErro: {erro}\nCorrija."
+        prompt = f'{prompt_base}\n\nResposta inválida:\n{erro}\n\nCorrija.'
+raise RuntimeError('JSON inválido após várias tentativas')
 ```
 
----
-
-# Validação com Pydantic
-
-O Pydantic faz o trabalho pesado:
-- Verifica se o JSON é válido
-- Converte tipos (string → date)
-- Lista exatamente o que está errado
-
-A mensagem de erro vai pro LLM corrigir.
+Versão resumida do código do repositório.
 
 ---
 
-# Demonstração ao vivo
+# Demo ao vivo
 
-[espaço para demo de 4 minutos]
+1. **O documento:** Projeto Aurora, em Word
+2. **O comando:**
 
-1. Documento de entrada
-2. Comando com --provedor bedrock
-3. JSON de saída
-4. Teste de correção automática
+```bash
+doc2json extrair projeto_aurora.docx \
+    --esquema projeto.yaml \
+    --provedor groq
+```
 
----
-
-# O que você aprendeu
-
-- Pipeline em etapas isoladas e testáveis
-- Esquema define o contrato
-- Interface permite trocar provedores
-- Validação + retry = robustez
-- Testes com FakeLLM
+3. **O resultado:** JSON validado
+4. **Quando a IA erra:** o teste que simula o erro e a correção
 
 ---
 
-# O repositório
+# O que levar daqui
+
+- Trate a IA como parser, com um contrato (o esquema)
+- Valide tudo o que ela devolve
+- Deixe o LLM plugável: troque de provedor sem reescrever
+- Teste sem IA: um FakeLLM deixa tudo testável
+
+---
+
+# O repositório é um presente
 
 **github.com/AgataAraujo-dev/doc2json**
 
-[espaço para QR code]
+- Open source, licença MIT
+- Teste o fluxo sem conta na nuvem, com o FakeLLM
+- Issues "good first issue" esperando por você
 
-- MIT License
-- Issues `good first issue` abertas
-- PRs são bem-vindos!
+[QR code do repositório]
 
 ---
 
 # Perguntas?
 
-[espaço para QR code]
+Obrigada! 🐍
 
 **github.com/AgataAraujo-dev/doc2json**
 
-[contato]
+[LinkedIn — preencher]
 
-Obrigada! 🐍
+[QR code do repositório]
