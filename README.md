@@ -95,14 +95,22 @@ export BEDROCK_MODEL_ID="anthropic.claude-3-haiku-20240307-v1:0"
 
 ## Formatos suportados
 
-- PDF (com texto, não escaneado)
+- PDF (com texto ou escaneado com o extra de OCR)
 - Word (.docx)
 - Excel (.xlsx)
+
+### OCR para PDFs escaneados
+
+Instale o extra de OCR com `pip install -e ".[ocr]"` a partir do repositório.
+Instale também o [Tesseract](https://tesseract-ocr.github.io/tessdoc/Installation.html),
+adicione o executável ao `PATH` e confirme que `tesseract --list-langs` lista `por`.
+
+O comando `doc2json extrair` usa OCR local automaticamente quando o PDF não tem texto extraível.
+Se já houver texto no PDF, a extração continua usando sua camada de texto.
 
 ## Roadmap
 
 - [ ] Provedor local (Ollama)
-- [ ] OCR para PDFs escaneados
 - [ ] Tabelas do Word na ordem correta
 - [ ] Processar pasta inteira
 - [ ] Saída em CSV
