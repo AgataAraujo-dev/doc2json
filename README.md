@@ -22,7 +22,7 @@ cd doc2json
 python -m venv .venv
 .venv\Scripts\Activate.ps1  # Windows
 # ou: source .venv/bin/activate  # Linux/Mac
-pip install -e '.[dev,bedrock]'
+pip install -e '.[dev,groq]'
 ```
 
 ## Exemplo de uso
@@ -43,13 +43,19 @@ campos:
     descricao: Data final no formato AAAA-MM-DD
 ```
 
-2. Execute:
+2. Configure a chave do Groq:
 
 ```bash
-doc2json extrair documento.docx --esquema esquema.yaml --provedor bedrock
+export GROQ_API_KEY="sua-chave-aqui"
 ```
 
-3. Resultado:
+3. Execute:
+
+```bash
+doc2json extrair documento.docx --esquema esquema.yaml --provedor groq
+```
+
+4. Resultado:
 
 ```json
 {
@@ -64,9 +70,20 @@ doc2json extrair documento.docx --esquema esquema.yaml --provedor bedrock
 | Provedor | Descrição |
 |----------|-----------|
 | `fake` | Resposta vazia, para testar o fluxo sem IA |
+| `groq` | Groq Cloud (grátis, rápido) |
 | `bedrock` | Amazon Bedrock (requer AWS configurada) |
 
-### Configurando o Bedrock
+### Configurando o Groq (recomendado)
+
+1. Crie uma conta em [console.groq.com](https://console.groq.com)
+2. Gere uma API key
+3. Defina a variável de ambiente:
+
+```bash
+export GROQ_API_KEY="sua-chave-aqui"
+```
+
+### Configurando o Bedrock (alternativa)
 
 1. Configure suas credenciais AWS (`aws configure`)
 2. Habilite o modelo no console do Bedrock
